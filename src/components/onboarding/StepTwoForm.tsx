@@ -1,5 +1,6 @@
 'use client'
 
+import { useOnboardingFormContext } from '@/context/OnboardingFormContext';
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useFieldArray, useForm } from "react-hook-form"
 import * as z from "zod"
@@ -17,36 +18,52 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Trash2 } from 'lucide-react'
 import { ScrollArea } from "../ui/scroll-area"
-
-const WorkExperienceSchema = z.object({
-  experiences: z.array(
-    z.object({
-      title: z.string().min(1, "Job title is required"),
-      company: z.string().min(1, "Company name is required"),
-      startDate: z.string().min(1, "Start date is required"),
-      endDate: z.string().optional(),
-      description: z.string().optional()
-    })
-  ).nonempty("At least one work experience entry is required"),
-});
-
-type WorkExperienceValues = z.infer<typeof WorkExperienceSchema>
+import { WorkExperienceSchema } from '@/schemas';
+import { useRouter } from 'next/navigation';
 
 export default function StepTwoForm() {
-  const form = useForm<WorkExperienceValues>({
-    resolver: zodResolver(WorkExperienceSchema),
+  const { formData, updateFormDetails } = useOnboardingFormContext();
+  const router = useRouter()
+
+  const form = useForm<z.infer<typeof WorkExperienceSchema>
+  >({
+    resolver: zodResolver(
+      z.object({
+        experiences: z.array(
+          z.object({
+            title: z.string().min(1, "Job title is required"),
+            company: z.string().min(1, "Company name is required"),
+            startDate: z.string().min(1, "Start date is required"),
+            endDate: z.string().optional(),
+            description: z.string().optional(),
+          })
+        ).nonempty("At least one work experience entry is required"),
+      })
+    ),
     defaultValues: {
-      experiences: [{ title: '', company: '', startDate: '', endDate: '', description: '' }]
+      experiences: formData.experiences.length > 0 ? formData.experiences : [
+        {
+          title: '',
+          company: '',
+          startDate: '',
+          endDate: '',
+          description: '',
+        },
+      ],
     },
-  })
+  });
 
   const { fields, append, remove } = useFieldArray({
     name: "experiences",
     control: form.control,
   })
 
-  function onSubmit(data: WorkExperienceValues) {
-    console.log(data)
+  const onSubmit = (data: any) => {
+    updateFormDetails({
+      experiences: data.experiences,
+    });
+    router.push("/onboarding/step-three");
+    // Navigate to the next step or submit the form
   }
 
   return (
@@ -155,6 +172,9 @@ export default function StepTwoForm() {
           onClick={() => append({ title: '', company: '', startDate: '', endDate: '', description: '' })}
         >
           Add Another Experience
+        </Button>
+        <Button type="submit" className="flex w-full h-[60px] justify-center items-center">
+          Continue
         </Button>
       </form>
     </Form>
