@@ -6,7 +6,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
+import { signUpNewUser } from "@/app/(auth)/register/action";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
@@ -26,13 +26,6 @@ export default function RegisterForm() {
     },
   });
 
-  const router = useRouter()
-
-  async function onSubmit(data: z.infer<typeof formSchema>) {
-    router.push("/onboarding/step-one")
-    console.log(data)
-  }
-
   return (
     <div className="w-full h-fit">
       <div className="flex h-fit justify-center items-center my-14 text-4xl font-medium text-center">
@@ -40,7 +33,7 @@ export default function RegisterForm() {
       </div>
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(onSubmit)}
+          onSubmit={form.handleSubmit(signUpNewUser)}
           className="space-y-4 w-full"
         >
           <div className="flex space-x-4 w-full">
