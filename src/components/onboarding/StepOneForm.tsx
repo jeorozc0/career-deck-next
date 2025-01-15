@@ -1,5 +1,6 @@
 'use client'
 
+import { useOnboardingFormContext } from '@/context/OnboardingFormContext';
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
@@ -18,43 +19,47 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { X } from 'lucide-react'
 import { ScrollArea } from "../ui/scroll-area"
-import Link from "next/link"
+import { useRouter } from 'next/navigation';
+import { BasicInfoSchema } from '@/schemas';
 
-const BasicInfoSchema = z.object({
-  headline: z.string().min(1, { message: "Please provide a title or role" }),
-  summary: z.string().min(1, { message: "Please provide a brief summary" }),
-  location: z.string().optional(),
-  phone: z.string().optional(),
-  skills: z.array(z.string()),
-})
-
-type BasicInfoValues = z.infer<typeof BasicInfoSchema>
 
 export default function StepOneForm() {
+  const { formData, updateFormDetails } = useOnboardingFormContext();
   const [skillInput, setSkillInput] = useState("")
-  const [skills, setSkills] = useState<string[]>([])
+  const [skills, setSkills] = useState<string[]>(formData.skills)
+  const router = useRouter()
 
-  const form = useForm<BasicInfoValues>({
-    resolver: zodResolver(BasicInfoSchema),
+  const form = useForm<z.infer<typeof BasicInfoSchema>
+  >({
+    resolver: zodResolver(
+      z.object({
+        headline: z.string().min(1, { message: "Please provide a title or role" }),
+        summary: z.string().min(1, { message: "Please provide a brief summary" }),
+        location: z.string().optional(),
+        phone: z.string().optional(),
+      })
+    ),
     defaultValues: {
-      headline: "",
-      summary: "",
-      location: "",
-      phone: "",
-      skills: [],
+      headline: formData.headline,
+      summary: formData.summary,
+      location: formData.location,
+      phone: formData.phone,
     },
-  })
+  });
 
-  function onSubmit(values: BasicInfoValues) {
-    console.log({ ...values, skills })
-    // Handle form submission here
+  const onSubmit = (data: any) => {
+    updateFormDetails({
+      ...data,
+      skills: skills,
+    });
+    router.push("/onboarding/step-two");
   }
 
   const addSkill = () => {
     if (skillInput.trim() !== "" && !skills.includes(skillInput.trim())) {
       const newSkills = [...skills, skillInput.trim()]
       setSkills(newSkills)
-      form.setValue("skills", newSkills)
+      updateFormDetails({ skills: newSkills })
       setSkillInput("")
     }
   }
@@ -62,7 +67,7 @@ export default function StepOneForm() {
   const removeSkill = (skillToRemove: string) => {
     const newSkills = skills.filter(skill => skill !== skillToRemove)
     setSkills(newSkills)
-    form.setValue("skills", newSkills)
+    updateFormDetails({ skills: newSkills })
   }
 
   return (
@@ -138,60 +143,56 @@ export default function StepOneForm() {
             )}
           />
         </div>
-        <FormField
-          control={form.control}
-          name="skills"
-          render={({ field }) => (
-            <FormItem className="space-y-1">
-              <FormLabel>Skills</FormLabel>
-              <div className="flex space-x-2">
-                <FormControl>
-                  <Input
-                    placeholder="Add a skill"
-                    value={skillInput}
-                    onChange={(e) => setSkillInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        addSkill()
-                      }
-                    }}
-                  />
-                </FormControl>
-                <Button type="button" onClick={addSkill}>
-                  Add
-                </Button>
-              </div>
-              <ScrollArea className="mt-2 border border-input rounded-md p-2">
-                <div className="min-h-7 max-h-[84px] flex flex-wrap gap-2">
-                  {skills.map((skill, index) => (
-                    <div
-                      key={index}
-                      className="bg-secondary text-secondary-foreground px-2 py-1 rounded-md flex items-center text-sm"
-                    >
-                      {skill}
-                      <button
-                        type="button"
-                        onClick={() => removeSkill(skill)}
-                        className="ml-2 text-secondary-foreground/50 hover:text-secondary-foreground"
-                        aria-label={`Remove ${skill}`}
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
+        <FormItem className="space-y-1">
+          <FormLabel>Skills</FormLabel>
+          <div className="flex space-x-2">
+            <FormControl>
+              <Input
+                placeholder="Add a skill"
+                value={skillInput}
+                onChange={(e) => setSkillInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addSkill()
+                  }
+                }}
+              />
+            </FormControl>
+            <Button type="button" onClick={addSkill}>
+              Add
+            </Button>
+          </div>
+          <ScrollArea className="mt-2 border border-input rounded-md p-2">
+            <div className="min-h-7 max-h-[84px] flex flex-wrap gap-2">
+              {skills.map((skill, index) => (
+                <div
+                  key={index}
+                  className="bg-secondary text-secondary-foreground px-2 py-1 rounded-md flex items-center text-sm"
+                >
+                  {skill}
+                  <button
+                    type="button"
+                    onClick={() => removeSkill(skill)}
+                    className="ml-2 text-secondary-foreground/50 hover:text-secondary-foreground"
+                    aria-label={`Remove ${skill}`}
+                  >
+                    <X size={14} />
+                  </button>
                 </div>
-              </ScrollArea>
-              <FormDescription className="text-xs">
-                Enter your skills and press Enter or click Add. Click the X to remove a skill.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+              ))}
+            </div>
+          </ScrollArea>
+          <FormDescription className="text-xs">
+            Enter your skills and press Enter or click Add. Click the X to remove a skill.
+          </FormDescription>
+          <FormMessage />
+        </FormItem>
+        <Button type="submit" className="flex w-full h-[60px] justify-center items-center">
+          Continue
+        </Button>
       </form>
-      <Link href={"/onboarding/step-two"}>"Next Step"</Link>
     </Form>
-
   )
 }
+
