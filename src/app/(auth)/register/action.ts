@@ -1,5 +1,7 @@
 "use server";
 import { createClient } from "@/utils/supabase/server";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 
 const signUpSchema = z.object({
@@ -26,5 +28,8 @@ export async function signUpNewUser(data: z.infer<typeof signUpSchema>) {
   if (error) {
     console.log(error)
   }
+
+  revalidatePath("/", "layout");
+  redirect("/login");
 
 }
