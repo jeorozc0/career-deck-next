@@ -9,65 +9,96 @@ datasource db {
 }
 
 model user {
-  id          String           @id @db.Uuid // Let the trigger handle id generation
-  email       String           @unique
-  created_at  DateTime         @default(now())
-  updated_at  DateTime         @updatedAt
-  onboarded   Boolean          @default(false)
+  id                  String    @id @db.Uuid
+  email               String    @unique
+  first_name          String?
+  last_name           String?
+  current_role        String?
+  preferred_job_types String[]  // Remove @db.Text[] as it's not needed
+  created_at          DateTime  @default(now()) @db.Timestamptz()
+  updated_at          DateTime  @updatedAt @db.Timestamptz()
+  onboarded           Boolean   @default(false)
+  
+  // Relations
+  resumes             resume[]
+}
+
+model resume {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String    @db.Uuid
+  name        String
+  is_primary  Boolean   @default(false)
   headline    String?
-  summary     String?          @db.Text
-  location    String?
-  phone       String?
-  skills      userskill[]
-  experiences workexperience[]
-  education   education[]
+  summary     String?
+  contact     Json?
+  created_at  DateTime  @default(now()) @db.Timestamptz()
+  updated_at  DateTime  @updatedAt @db.Timestamptz()
+
+  // Relations
+  user        user      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  experiences resume_experience[]
+  education   resume_education[]
+  skills      resume_skill[]
+
+  @@index([user_id])
+}
+
+model resume_experience {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  resume_id   String    @db.Uuid
+  title       String
+  company     String
+  start_date  DateTime  @db.Timestamptz()
+  end_date    DateTime? @db.Timestamptz()
+  description String?
+  created_at  DateTime  @default(now()) @db.Timestamptz()
+  updated_at  DateTime  @updatedAt @db.Timestamptz()
+
+  // Relations
+  resume      resume    @relation(fields: [resume_id], references: [id], onDelete: Cascade)
+
+  @@index([resume_id])
+}
+
+model resume_education {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  resume_id   String    @db.Uuid
+  name        String
+  type        String
+  major       String
+  start_date  DateTime  @db.Timestamptz()
+  end_date    DateTime? @db.Timestamptz()
+  gpa         String?
+  created_at  DateTime  @default(now()) @db.Timestamptz()
+  updated_at  DateTime  @updatedAt @db.Timestamptz()
+
+  // Relations
+  resume      resume    @relation(fields: [resume_id], references: [id], onDelete: Cascade)
+
+  @@index([resume_id])
 }
 
 model skill {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name       String   @unique
-  created_at DateTime @default(now())
-}
-
-model userskill {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id    String   @db.Uuid
-  skill_id   String   @db.Uuid
-  user       user     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  created_at DateTime @default(now())
-
-  @@unique([user_id, skill_id])
-  @@index([user_id])
-  @@index([skill_id])
-}
-
-model workexperience {
   id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id     String    @db.Uuid
-  title       String
-  company     String
-  start_date  DateTime
-  end_date    DateTime?
-  description String?   @db.Text
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @updatedAt
-  user        user      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  name        String    @unique
+  category    String?
+  created_at  DateTime  @default(now()) @db.Timestamptz()
 
-  @@index([user_id])
+  // Relations
+  resumes     resume_skill[]
 }
 
-model education {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id    String    @db.Uuid
-  name       String
-  type       String
-  major      String
-  start_date DateTime
-  end_date   DateTime?
-  gpa        String?
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
-  user       user      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+model resume_skill {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  resume_id   String    @db.Uuid
+  skill_id    String    @db.Uuid
+  created_at  DateTime  @default(now()) @db.Timestamptz()
 
-  @@index([user_id])
+  // Relations
+  resume      resume    @relation(fields: [resume_id], references: [id], onDelete: Cascade)
+  skill       skill     @relation(fields: [skill_id], references: [id])
+
+  @@unique([resume_id, skill_id])
+  @@index([resume_id])
+  @@index([skill_id])
 }
