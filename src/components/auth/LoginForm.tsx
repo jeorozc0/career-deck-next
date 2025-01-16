@@ -24,7 +24,7 @@ export default function LoginForm() {
 
   return (
     <div className="w-full h-fit">
-      <div className="flex h-fit justify-center items-center my-14 text-4xl font-medium text-center">
+      <div className="flex h-fit justify-center items-center my-10 text-4xl font-medium text-center">
         <h2>Let&apos;s do this</h2>
       </div>
       <Form {...form}>
@@ -73,13 +73,13 @@ export default function LoginForm() {
           </Button>
           <div className="flex w-full justify-center">
             <p>
-              Have an account?{" "}
+              Don't have an account?{" "}
               <span>
                 <Link
-                  href={"/"}
+                  href={"/register"}
                   className={"font-bold hover:underline"}
                 >
-                  Log in
+                  Join Now
                 </Link>
               </span>{" "}
             </p>
