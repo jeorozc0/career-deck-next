@@ -28,7 +28,6 @@ const OnboardingSchema = z.object({
 type OnboardingFormData = z.infer<typeof OnboardingSchema>
 
 export default function OnboardingForm() {
-  const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   const form = useForm<OnboardingFormData>({
@@ -44,14 +43,10 @@ export default function OnboardingForm() {
   const onSubmit = async (data: OnboardingFormData) => {
     startTransition(async () => {
       try {
-        const result = await updateUserProfile(data)
-        if (result.success) {
-          router.push('/')
-        } else {
-          throw new Error("Failed to update profile")
-        }
+        await updateUserProfile(data)
       } catch (error) {
-        console.error('Error:', error)
+        // You might want to add toast notifications here
+        console.error('Error updating profile:', error)
       }
     })
   }
