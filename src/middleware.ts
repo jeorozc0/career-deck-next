@@ -1,41 +1,19 @@
 import { type NextRequest } from 'next/server'
-import { NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { updateSession } from '@/utils/supabase/middleware'
 
 export async function middleware(request: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user }, error } = await supabase.auth.getUser()
-
-  const publicRoutes = ['/home', '/login', '/register']
-  const isPublicRoute = publicRoutes.includes(request.nextUrl.pathname)
-  const isOnboardingRoute = request.nextUrl.pathname.startsWith('/onboarding')
-
-  if (!user || error) {
-    return !isPublicRoute ?
-      NextResponse.redirect(new URL('/login', request.url)) :
-      NextResponse.next()
-  }
-
-  // Check onboarding - note we use id instead of auth_id now
-  const { data: profile } = await supabase
-    .from('user')
-    .select('onboarded')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.onboarded && !isOnboardingRoute) {
-    return NextResponse.redirect(new URL('/onboarding/step-one', request.url))
-  }
-
-  if (profile?.onboarded && isOnboardingRoute) {
-    return NextResponse.redirect(new URL('/', request.url))
-  }
-
-  return NextResponse.next()
+  return await updateSession(request)
 }
 
 export const config = {
   matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * Feel free to modify this pattern to include more paths.
+     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
