@@ -2,12 +2,10 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
-  // Initial response setup
   let supabaseResponse = NextResponse.next({
     request,
   })
 
-  // Create Supabase client with cookie handling
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -29,72 +27,39 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // IMPORTANT: Get user immediately after client creation
+  // Do not run code between createServerClient and
+  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
+  // issues with users being randomly logged out.
+
+  // IMPORTANT: DO NOT REMOVE auth.getUser()
+
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Define public routes
-  const publicRoutes = ['/login', '/register', '/auth']
-  const isPublicRoute = publicRoutes.some(route =>
-    request.nextUrl.pathname.startsWith(route)
-  )
-  const isOnboardingRoute = request.nextUrl.pathname.startsWith('/onboarding')
-
-  // Handle authentication
-  if (!user && !isPublicRoute) {
+  if (
+    !user &&
+    !request.nextUrl.pathname.startsWith('/login') &&
+    !request.nextUrl.pathname.startsWith('/auth')
+  ) {
+    // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-
-    // Create redirect response
-    const redirectResponse = NextResponse.redirect(url)
-
-    // Copy all cookies from supabaseResponse
-    supabaseResponse.cookies.getAll().forEach(cookie => {
-      redirectResponse.cookies.set(cookie)
-    })
-
-    return redirectResponse
+    return NextResponse.redirect(url)
   }
 
-  // Only check onboarding for authenticated users
-  if (user && !isPublicRoute) {
-    try {
-      const { data: profile } = await supabase
-        .from('user')
-        .select('onboarded')
-        .eq('id', user.id)
-        .single()
+  // IMPORTANT: You *must* return the supabaseResponse object as it is.
+  // If you're creating a new response object with NextResponse.next() make sure to:
+  // 1. Pass the request in it, like so:
+  //    const myNewResponse = NextResponse.next({ request })
+  // 2. Copy over the cookies, like so:
+  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
+  // 3. Change the myNewResponse object to fit your needs, but avoid changing
+  //    the cookies!
+  // 4. Finally:
+  //    return myNewResponse
+  // If this is not done, you may be causing the browser and server to go out
+  // of sync and terminate the user's session prematurely!
 
-      if (!profile?.onboarded && !isOnboardingRoute) {
-        const url = request.nextUrl.clone()
-        url.pathname = '/onboarding'
-
-        const redirectResponse = NextResponse.redirect(url)
-        supabaseResponse.cookies.getAll().forEach(cookie => {
-          redirectResponse.cookies.set(cookie)
-        })
-
-        return redirectResponse
-      }
-
-      if (profile?.onboarded && isOnboardingRoute) {
-        const url = request.nextUrl.clone()
-        url.pathname = '/'
-
-        const redirectResponse = NextResponse.redirect(url)
-        supabaseResponse.cookies.getAll().forEach(cookie => {
-          redirectResponse.cookies.set(cookie)
-        })
-
-        return redirectResponse
-      }
-    } catch (error) {
-      // Log error but don't interrupt the flow
-      console.error('Error checking onboarding status:', error)
-    }
-  }
-
-  // Return the original response if no redirects needed
   return supabaseResponse
 }
