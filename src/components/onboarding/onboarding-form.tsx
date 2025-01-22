@@ -13,10 +13,9 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { useRouter } from 'next/navigation'
 import { useTransition } from 'react'
-import { updateUserProfile } from "@/app/onboarding/action"
 import { motion } from "framer-motion"
+import { updateUserProfile } from "@/app/(protected)/onboarding/action"
 
 const OnboardingSchema = z.object({
   firstName: z.string().min(1, "First name is required"),

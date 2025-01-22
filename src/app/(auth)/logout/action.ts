@@ -23,5 +23,5 @@ export async function globalScopeLogOut() {
     redirect("/error");
   }
   revalidatePath("/", "layout");
-  redirect("/auth/login");
+  redirect("/login");
 }

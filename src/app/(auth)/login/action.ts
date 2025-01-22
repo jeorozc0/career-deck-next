@@ -21,7 +21,7 @@ export async function loginUser(data: z.infer<typeof signUpSchema>) {
     console.log(error)
   }
 
-  revalidatePath('/', 'layout')
-  redirect('/')
+  revalidatePath('/profile', 'layout')
+  redirect('/profile')
 
 }
